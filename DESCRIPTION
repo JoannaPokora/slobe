@@ -1,0 +1,29 @@
+Package: slobe
+Type: Package
+Title: What the Package Does (Title Case)
+Version: 0.1.0
+Authors@R: c(
+    person(
+      "Joanna", "Pokora",
+      email = "pokorajo@gmail.com",
+      role = c("aut", "cre")
+    )
+  )
+Description: More about what it does (maybe more than one line).
+    Continuation lines should be indented.
+License: What license is it under?
+Encoding: UTF-8
+LazyData: true
+Config/roxygen2/version: 8.0.0
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 8.0.0
+LinkingTo: 
+    Rcpp,
+    RcppEigen
+Imports: 
+    Rcpp,
+    mice,
+    glmnet
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
