@@ -21,9 +21,9 @@ namespace slobe {
 
     SLOBEResult slobe_admm(
         const Eigen::VectorXd& start,
-        const Eigen::MatrixXd& Xmis_r,
         const Eigen::MatrixXd& Xinit,
-        const Eigen::VectorXd& Y_r,
+        const Eigen::VectorXd& y,
+        const Eigen::MatrixXd* Xmis,
         double a_prior,
         double b_prior,
         const Eigen::MatrixXd& Covmat_r,
