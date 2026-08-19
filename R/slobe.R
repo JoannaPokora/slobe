@@ -20,7 +20,7 @@ rescale <- function(y, x) {
 #' @keywords internal
 
 rescale_all <- function(results, Xmis) {
-  k <- NCOL(results[["X"]])
+  k <- ncol(results[["X"]])
   scales <- sapply(1:k, function(l) rescale(results[["X"]][, l], Xmis[, l]))
   results[["X"]] <- t(t(results[["X"]]) * scales[2, ] + scales[1, ])
   results[["Sigma"]] <- results[["Sigma"]] * (scales[2, ] %*% t(scales[2, ]))
@@ -54,11 +54,10 @@ center_and_scale <- function(X) {
 #' @param start the initial vector of regression coefficients for the first
 #' iteration. Default to the LASSO estimator obtained after
 #'
-#' @param Xmis model matrix
+#' @param Xmis design matrix
 #' @param Y numeric. Response variable.
 #' @param family model family - either "gaussian" (default) or "binomial"
-#' @param start description
-#' @param Xinit initially imputed data matrix
+#' @param start model coefficients used for initialization.
 #' @param a_prior,b_prior non-negative parameters of the prior Beta distribution
 #'   on theta.
 #' @param Covmat numeric covariance matrix. Default to identity matrix.
@@ -104,18 +103,17 @@ center_and_scale <- function(X) {
 #' set.seed(17)
 #' xy <- SLOPE:::randomProblem(1e2, 200, response = "gaussian")
 #' X <- as.matrix(xy$x)
-#' Y <- xy$y
-#' fit <- ABSLOPE(X, Y)
+#' y <- xy$y
+#' fit <- ABSLOPE(X, y)
 #' @export slobe
 #'
 
-slobe <- function(Xmis,
-                  Y,
+slobe <- function(X,
+                  y,
                   family = "gaussian",
                   start = NULL,
-                  Xinit = NULL,
-                  a_prior = 0.01 * NROW(Xmis),
-                  b_prior = 0.01 * NROW(Xmis),
+                  a_prior = 0.01 * NROW(X),
+                  b_prior = 0.01 * NROW(X),
                   Covmat = NULL,
                   sigma = NULL,
                   FDR = 0.05,
@@ -132,12 +130,12 @@ slobe <- function(Xmis,
   checkmate::assert_logical(verbose)
   checkmate::assert_logical(BH)
 
-  if(!(is.matrix(Xmis) | is.data.frame(Xmis))) {
-    stop(paste0("Xmis needs to be matrix or data.frame. You provided ",
-                paste0(class(Xmis), collapse = ", ")))
+  if(!(is.matrix(X) | is.data.frame(X))) {
+    stop(paste0("X needs to be matrix or data.frame. You provided ",
+                paste0(class(X), collapse = ", ")))
   }
 
-  Xmis <- as.matrix(Xmis)
+  X <- as.matrix(X)
 
   ocall <- match.call()
 
@@ -145,42 +143,51 @@ slobe <- function(Xmis,
   known_cov <- !is.null(Covmat)
   # dummy value for a case with unknown covariance matrix
   if (is.null(Covmat)) {
-    Covmat <- diag(NCOL(Xmis))
+    Covmat <- diag(NCOL(X))
   }
 
   # if sigma is null with gaussian family -> known_sigma = FALSE
   known_sigma <- (family == "binomial") || !is.null(sigma)
-  # dummy value for a case with unknown sigma
-  sigma <- if (family == "binomial") {
-    2
-  }
-  else if (is.null(sigma)) {
-    1
+  if (!known_sigma || family == "binomial") {
+    sigma <- 1
   }
 
-  # if Xinit is null -> mice imputation
-  if (is.null(Xinit)) {
-    imp <- mice::mice(Xmis, m = 1, printFlag = FALSE)
-    Xinit <- as.matrix(mice::complete(imp))
+  # if X has missing values -> column mean imputation
+  if (any(is.na(suppressWarnings(as.numeric(X))))) {
+    Xmis <- X
+    Xinit <- apply(Xmis, 2, function(col) {
+      missing_vals <- is.na(col)
+      
+      if (any(missing_vals)) {
+        col[missing_vals] <- mean(col, na.rm = TRUE)
+      }
+      
+      col
+    })
+  } else {
+    Xmis <- NULL
+    Xinit <- X
   }
 
   Xinit <- center_and_scale(Xinit)
 
   # if start is null -> LASSO gives starting coefficients
   if (is.null(start)) {
-    lasso <- glmnet::cv.glmnet(Xinit, Y, standardize = FALSE, intercept = FALSE,
-                               family = family)
+    lasso <- glmnet::cv.glmnet(
+      Xinit, y, standardize = FALSE, intercept = FALSE,
+      family = family, control = list(pmax = nrow(Xinit) - 1)
+    )
     start <- stats::coefficients(lasso, s = "lambda.min")
     start <- start[2:(NCOL(Xinit) + 1), 1]
   }
 
   out <- slobe_admm_cpp(
-    start, Xmis, Xinit, Y, a_prior, b_prior,
+    start, Xinit, y, Xmis, a_prior, b_prior,
     Covmat, sigma, FDR, tol, known_sigma,
     max_iter, verbose, BH, known_cov
   )
 
-  out <- rescale_all(out, Xmis)
+  out <- rescale_all(out, X)
   out[["call"]] <- ocall
   structure(
     out,
