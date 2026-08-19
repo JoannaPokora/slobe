@@ -6,9 +6,9 @@
 // [[Rcpp::export]]
 Rcpp::List slobe_admm_cpp(
     const Eigen::VectorXd& start,
-    const Eigen::MatrixXd& X,
     const Eigen::MatrixXd& Xinit,
     const Eigen::VectorXd& y,
+    Rcpp::Nullable<Rcpp::NumericMatrix> Xmis,
     double a_prior,
     double b_prior,
     const Eigen::MatrixXd& covariance,
@@ -21,12 +21,21 @@ Rcpp::List slobe_admm_cpp(
     bool bh,
     bool known_covariance
 ) {
+  Eigen::MatrixXd Xmis_cpp;
+  const Eigen::MatrixXd* Xmis_ptr = nullptr;
+  
+  if (Xmis.isNotNull()) {
+    Rcpp::NumericMatrix tmp(Xmis);
+    Xmis_cpp = Rcpp::as<Eigen::MatrixXd>(tmp);
+    Xmis_ptr = &Xmis_cpp;
+  }
+  
   slobe::SLOBEResult result =
     slobe::slobe_admm(
       start,
-      X,
       Xinit,
       y,
+      Xmis_ptr,
       a_prior,
       b_prior,
       covariance,

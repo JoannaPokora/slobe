@@ -22,12 +22,12 @@ namespace slobe {
 
 slobe::SLOBEResult slobe_admm(
     const Eigen::VectorXd& start,
-    const Eigen::MatrixXd& Xmis_r,
     const Eigen::MatrixXd& Xinit,
-    const Eigen::VectorXd& Y_r,
+    const Eigen::VectorXd& y,
+    const Eigen::MatrixXd* Xmis,
     double a_prior,
     double b_prior,
-    const Eigen::MatrixXd& Covmat_r,
+    const Eigen::MatrixXd& Covmat,
     double sigma,
     double FDR,
     double tol,
@@ -38,7 +38,7 @@ slobe::SLOBEResult slobe_admm(
     bool known_cov
 ) {
     const int p = static_cast<int>(start.size());
-    const int n = static_cast<int>(Y_r.size());
+    const int n = static_cast<int>(y.size());
 
     Eigen::VectorXd beta = start;
     Eigen::VectorXd beta_new(p);
@@ -58,28 +58,29 @@ slobe::SLOBEResult slobe_admm(
     double swlambda = 0.0;
     double RSS = 0.0;
     double sigma_sq = 1.0;
-
-    // Missingness map from Xmis
-    const Eigen::MatrixXd& Xmis = Xmis_r;
-
+    
+    const bool has_missing = (Xmis != nullptr);
+    
     std::vector<std::vector<bool>> XisFin(n, std::vector<bool>(p));
     std::vector<int> anyNanXrows;
     std::vector<std::vector<int>> nanIndicesInRow;
 
-    for (int i = 0; i < n; ++i) {
+    if (has_missing) {
+      for (int i = 0; i < n; ++i) {
         bool anyNan = false;
         std::vector<int> nanInd;
         for (int j = 0; j < p; ++j) {
-            XisFin[i][j] = is_finite(Xmis(i, j));
-            if (!XisFin[i][j]) {
-                nanInd.push_back(j);
-                anyNan = true;
-            }
+          XisFin[i][j] = is_finite((*Xmis)(i, j));
+          if (!XisFin[i][j]) {
+            nanInd.push_back(j);
+            anyNan = true;
+          }
         }
         if (anyNan) {
-            anyNanXrows.push_back(i);
-            nanIndicesInRow.push_back(nanInd);
+          anyNanXrows.push_back(i);
+          nanIndicesInRow.push_back(nanInd);
         }
+      } 
     }
 
     // X starts from Xinit, then center/scale
@@ -91,7 +92,7 @@ slobe::SLOBEResult slobe_admm(
     if (!known_cov) {
         linshrink_cov(X, Sigma, n, p);
     } else {
-        Sigma = Covmat_r;
+        Sigma = Covmat;
     }
 
     Eigen::LLT<Eigen::MatrixXd> llt(Sigma);
@@ -110,11 +111,11 @@ slobe::SLOBEResult slobe_admm(
     // init sigma, c, theta, gamma
     double sstart = sum_nz(start);
     double pstart = (sstart > 0.0) ? sstart : 1.0;
-
-    Eigen::VectorXd Y = Y_r;
+    
+    std::cout << "n=" << n << ", pstart=" << pstart;
 
     if (!known_sigma) {
-        sigma = std::sqrt((X * beta_e - Y).squaredNorm() / (n - pstart));
+        sigma = std::sqrt((X * beta_e - y).squaredNorm() / (n - pstart));
     }
 
     lambda_sigma = lambda * sigma;
@@ -161,9 +162,6 @@ slobe::SLOBEResult slobe_admm(
             std::cout << "Iteration: " << iter << "/" << max_iter << std::endl;
         }
 
-        w = Eigen::VectorXd::Ones(p) - (1.0 - c) * gamma;
-        w_e = w;
-
         div_X_by_w(X_div_w, X, w_e, n, p);
 
         Eigen::VectorXd lambda_sorted = lambda_sigma;
@@ -172,7 +170,7 @@ slobe::SLOBEResult slobe_admm(
         Eigen::VectorXd just_lambda_sorted = lambda;
         std::sort(just_lambda_sorted.data(), just_lambda_sorted.data() + p, std::greater<double>());
 
-        Eigen::VectorXd beta_hat = slope_libslope_fit(X_div_w, Y, lambda_sorted);
+        Eigen::VectorXd beta_hat = slope_libslope_fit(X_div_w, y, lambda_sorted);
 
         wbeta = beta_hat.cwiseAbs();
         argsort_desc(wbeta, order);
@@ -182,7 +180,7 @@ slobe::SLOBEResult slobe_admm(
         beta_new = beta_hat;
 
         if (!known_sigma) {
-            RSS = (X * beta_hat - Y).squaredNorm();
+            RSS = (X * beta_hat - y).squaredNorm();
             Eigen::VectorXd wbeta_sorted = wbeta;
             std::sort(wbeta_sorted.data(), wbeta_sorted.data() + p, std::greater<double>());
             swlambda = (wbeta_sorted.array() * lambda.array()).sum();
@@ -192,20 +190,23 @@ slobe::SLOBEResult slobe_admm(
 
         lambda_sigma = lambda * sigma;
         sigma_sq     = sigma * sigma;
-
-        if (!known_cov) {
+        
+        if (has_missing) {
+          if (!known_cov) {
             linshrink_cov(X, Sigma, n, p);
             Eigen::LLT<Eigen::MatrixXd> llt2(Sigma);
             if (llt2.info() != Eigen::Success) {
-                throw std::runtime_error("Cholesky failed for Sigma (iter).");
+              throw std::runtime_error("Cholesky failed for Sigma (iter).");
             }
             S = llt2.solve(Eigen::MatrixXd::Identity(p, p));
+          }
+          
+          mu = X.colwise().mean().transpose();
+          
+          impute_advance(beta_hat, X, y, S, sigma_sq, n, p, mu, XisFin,
+                         anyNanXrows, nanIndicesInRow);
+          center_and_scale(X);  
         }
-
-        mu = X.colwise().mean().transpose();
-
-        impute_advance(beta_hat, X, Y, S, sigma_sq, n, p, mu, XisFin, anyNanXrows, nanIndicesInRow);
-        center_and_scale(X);
 
         Eigen::VectorXd beta_new_abs_ordered(p);
         for (int i = 0; i < p; ++i) {
@@ -261,7 +262,7 @@ slobe::SLOBEResult slobe_admm(
     }
 
     slobe::SLOBEResult result;
-    result.coefficients = beta;
+    result.coefficients = beta_new;
     result.sigma        = sigma;
     result.theta        = theta;
     result.c            = c;
@@ -273,10 +274,6 @@ slobe::SLOBEResult slobe_admm(
     result.lambda       = lambda;
 
     return result;
-}
-
-int connection_test() {
-    return 12345;
 }
 
 }
