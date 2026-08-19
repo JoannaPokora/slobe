@@ -1,7 +1,11 @@
 PKG_CPPFLAGS += \
     -I../inst/include \
     -Ivendor/stats/include \
-    -Ivendor/gcem/include
+    -Ivendor/gcem/include \
+    -Wno-ignored-attributes \
+    -Wno-sign-compare \
+    -Wno-unused-variable \
+    -ftemplate-backtrace-limit=1
 
 CXX_STD = CXX17
 
