@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Eigen/Core>
+#include <string>
 
 namespace slobe {
 
@@ -21,7 +22,8 @@ void div_X_by_w(
 Eigen::VectorXd slope_libslope_fit(
     Eigen::MatrixXd& X,
     const Eigen::VectorXd& y,
-    const Eigen::VectorXd& lambda_sorted_decreasing
+    const Eigen::VectorXd& lambda_sorted_decreasing,
+    const std::string family
 );
 
 }
