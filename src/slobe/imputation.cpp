@@ -1,6 +1,6 @@
 #include "internal/imputation.hpp"
 
-#include <Eigen/Cholesky>
+#include <Eigen/LU>
 
 namespace slobe {
 
@@ -60,10 +60,7 @@ void impute_row_advance(
         b(i) = ((r * beta(t)) / sigma_sq + m(t) - u(i)) / tau_sq(t);
     }
 
-    // solve(A, b)
-    Eigen::LDLT<Eigen::MatrixXd> ldlt(A);
-    if (ldlt.info() != Eigen::Success) return;
-    Eigen::VectorXd sol = ldlt.solve(b);
+    Eigen::VectorXd sol = A.fullPivLu().solve(b);
 
     for (int i = 0; i < l; ++i) {
         int t = nanCols[i];
