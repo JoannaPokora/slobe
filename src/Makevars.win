@@ -12,7 +12,7 @@ CXX_STD = CXX17
 SOURCES = \
     RcppExports.cpp \
     rcpp_slobe.cpp \
-    slobe/slobe_admm.cpp \
+    slobe/slobe_fit.cpp \
     slobe/center_and_scale.cpp \
     slobe/cov_shrink_est.cpp \
     slobe/gamma_dist.cpp \

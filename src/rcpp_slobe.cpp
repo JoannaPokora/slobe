@@ -1,14 +1,17 @@
+#include <slobe/slobe_fit.hpp>
+
 #include <RcppEigen.h>
-#include <slobe/slobe_admm.hpp>
+#include <string>
 
 // [[Rcpp::depends(RcppEigen)]]
 
 // [[Rcpp::export]]
-Rcpp::List slobe_admm_cpp(
+Rcpp::List slobe_fit_cpp(
     const Eigen::VectorXd& start,
     const Eigen::MatrixXd& Xinit,
     const Eigen::VectorXd& y,
     Rcpp::Nullable<Rcpp::NumericMatrix> Xmis,
+    const std::string& family,
     double a_prior,
     double b_prior,
     const Eigen::MatrixXd& covariance,
@@ -31,11 +34,12 @@ Rcpp::List slobe_admm_cpp(
   }
   
   slobe::SLOBEResult result =
-    slobe::slobe_admm(
+    slobe::slobe_fit(
       start,
       Xinit,
       y,
       Xmis_ptr,
+      family,
       a_prior,
       b_prior,
       covariance,
@@ -51,14 +55,14 @@ Rcpp::List slobe_admm_cpp(
 
   return Rcpp::List::create(
     Rcpp::Named("coefficients") = result.coefficients,
-    Rcpp::Named("sigma")        = result.sigma,
-    Rcpp::Named("theta")        = result.theta,
-    Rcpp::Named("c")            = result.c,
-    Rcpp::Named("w")            = result.w,
-    Rcpp::Named("converged")    = result.converged,
-    Rcpp::Named("X")            = result.X,
-    Rcpp::Named("Sigma")        = result.Sigma,
-    Rcpp::Named("mu")           = result.mu,
-    Rcpp::Named("lambda")       = result.lambda
+    Rcpp::Named("sigma") = result.sigma,
+    Rcpp::Named("theta") = result.theta,
+    Rcpp::Named("c") = result.c,
+    Rcpp::Named("w") = result.w,
+    Rcpp::Named("converged") = result.converged,
+    Rcpp::Named("X") = result.X,
+    Rcpp::Named("Sigma") = result.Sigma,
+    Rcpp::Named("mu") = result.mu,
+    Rcpp::Named("lambda") = result.lambda
   );
 }

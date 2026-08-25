@@ -11,9 +11,9 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// slobe_admm_cpp
-Rcpp::List slobe_admm_cpp(const Eigen::VectorXd& start, const Eigen::MatrixXd& Xinit, const Eigen::VectorXd& y, Rcpp::Nullable<Rcpp::NumericMatrix> Xmis, double a_prior, double b_prior, const Eigen::MatrixXd& covariance, double sigma, double fdr, double tolerance, bool known_sigma, int max_iterations, bool verbose, bool bh, bool known_covariance);
-RcppExport SEXP _slobe_slobe_admm_cpp(SEXP startSEXP, SEXP XinitSEXP, SEXP ySEXP, SEXP XmisSEXP, SEXP a_priorSEXP, SEXP b_priorSEXP, SEXP covarianceSEXP, SEXP sigmaSEXP, SEXP fdrSEXP, SEXP toleranceSEXP, SEXP known_sigmaSEXP, SEXP max_iterationsSEXP, SEXP verboseSEXP, SEXP bhSEXP, SEXP known_covarianceSEXP) {
+// slobe_fit_cpp
+Rcpp::List slobe_fit_cpp(const Eigen::VectorXd& start, const Eigen::MatrixXd& Xinit, const Eigen::VectorXd& y, Rcpp::Nullable<Rcpp::NumericMatrix> Xmis, const std::string& family, double a_prior, double b_prior, const Eigen::MatrixXd& covariance, double sigma, double fdr, double tolerance, bool known_sigma, int max_iterations, bool verbose, bool bh, bool known_covariance);
+RcppExport SEXP _slobe_slobe_fit_cpp(SEXP startSEXP, SEXP XinitSEXP, SEXP ySEXP, SEXP XmisSEXP, SEXP familySEXP, SEXP a_priorSEXP, SEXP b_priorSEXP, SEXP covarianceSEXP, SEXP sigmaSEXP, SEXP fdrSEXP, SEXP toleranceSEXP, SEXP known_sigmaSEXP, SEXP max_iterationsSEXP, SEXP verboseSEXP, SEXP bhSEXP, SEXP known_covarianceSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -21,6 +21,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type Xinit(XinitSEXP);
     Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type y(ySEXP);
     Rcpp::traits::input_parameter< Rcpp::Nullable<Rcpp::NumericMatrix> >::type Xmis(XmisSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type family(familySEXP);
     Rcpp::traits::input_parameter< double >::type a_prior(a_priorSEXP);
     Rcpp::traits::input_parameter< double >::type b_prior(b_priorSEXP);
     Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type covariance(covarianceSEXP);
@@ -32,13 +33,13 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< bool >::type verbose(verboseSEXP);
     Rcpp::traits::input_parameter< bool >::type bh(bhSEXP);
     Rcpp::traits::input_parameter< bool >::type known_covariance(known_covarianceSEXP);
-    rcpp_result_gen = Rcpp::wrap(slobe_admm_cpp(start, Xinit, y, Xmis, a_prior, b_prior, covariance, sigma, fdr, tolerance, known_sigma, max_iterations, verbose, bh, known_covariance));
+    rcpp_result_gen = Rcpp::wrap(slobe_fit_cpp(start, Xinit, y, Xmis, family, a_prior, b_prior, covariance, sigma, fdr, tolerance, known_sigma, max_iterations, verbose, bh, known_covariance));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_slobe_slobe_admm_cpp", (DL_FUNC) &_slobe_slobe_admm_cpp, 15},
+    {"_slobe_slobe_fit_cpp", (DL_FUNC) &_slobe_slobe_fit_cpp, 16},
     {NULL, NULL, 0}
 };
 

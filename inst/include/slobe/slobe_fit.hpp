@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Eigen/Core>
+#include <string>
 
 namespace slobe {
 
@@ -19,11 +20,12 @@ namespace slobe {
         Eigen::VectorXd lambda;
     };
 
-    SLOBEResult slobe_admm(
+    SLOBEResult slobe_fit(
         const Eigen::VectorXd& start,
         const Eigen::MatrixXd& Xinit,
         const Eigen::VectorXd& y,
         const Eigen::MatrixXd* Xmis,
+        const std::string& family,
         double a_prior,
         double b_prior,
         const Eigen::MatrixXd& Covmat_r,
