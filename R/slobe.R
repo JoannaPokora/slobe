@@ -24,11 +24,13 @@ rescale_all <- function(results, Xmis) {
   scales <- sapply(1:k, function(l) rescale(results[["X"]][, l], Xmis[, l]))
   results[["X"]] <- t(t(results[["X"]]) * scales[2, ] + scales[1, ])
   results[["Sigma"]] <- results[["Sigma"]] * (scales[2, ] %*% t(scales[2, ]))
-  results[["mu"]] <- results[["mu"]] * scales[2] + scales[1, ]
-
-  intercept <- -sum(scales[1, ] * results[["coefficients"]])
-  coefs <- c(intercept, results[["coefficients"]] / scales[2, ])
-  names(coefs)[1] <- "(Intercept)"
+  results[["mu"]] <- results[["mu"]] * scales[2, ] + scales[1, ]
+  
+  beta <- results[["coefficients"]] / scales[2,]
+  intercept <- -sum(scales[1,] * results[["coefficients"]])
+  coefs <- c(intercept, beta)
+  coefs[is.na(coefs)] <- 0
+  names(coefs) <- c("(Intercept)", paste0("V", 1:(length(beta))))
 
   results[["coefficients"]] <- coefs
   results
@@ -148,10 +150,10 @@ slobe <- function(X,
 
   # if sigma is null with gaussian family -> known_sigma = FALSE
   known_sigma <- (family == "binomial") || !is.null(sigma)
-  if (!known_sigma || family == "binomial") {
+  if(!known_sigma || family == "binomial") {
     sigma <- 1
   }
-
+  
   # if X has missing values -> column mean imputation
   if (any(is.na(suppressWarnings(as.numeric(X))))) {
     Xmis <- X
@@ -174,23 +176,25 @@ slobe <- function(X,
   # if start is null -> LASSO gives starting coefficients
   if (is.null(start)) {
     lasso <- glmnet::cv.glmnet(
-      Xinit, y, standardize = FALSE, intercept = FALSE,
-      family = family, control = list(pmax = nrow(Xinit) - 1)
-    )
+      Xinit, y, standardize = FALSE, intercept = FALSE, family = family)
     start <- stats::coefficients(lasso, s = "lambda.min")
-    start <- start[2:(NCOL(Xinit) + 1), 1]
+    start <- start[2:(ncol(Xinit) + 1), 1]
   }
 
-  out <- slobe_admm_cpp(
-    start, Xinit, y, Xmis, a_prior, b_prior,
+  out <- slobe_fit_cpp(
+    start, Xinit, y, Xmis, family, a_prior, b_prior,
     Covmat, sigma, FDR, tol, known_sigma,
     max_iter, verbose, BH, known_cov
   )
+  
+  if(family == "binomial") {
+    out$sigma <- NULL
+  }
 
   out <- rescale_all(out, X)
   out[["call"]] <- ocall
   structure(
     out,
-    class = c("ABSLOPE", "SLOPE")
+    class = "ABSLOPE"
   )
 }
