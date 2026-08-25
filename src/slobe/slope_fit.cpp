@@ -37,7 +37,8 @@ void div_X_by_w(Eigen::MatrixXd& X_div_w,
 Eigen::VectorXd slope_libslope_fit(
     Eigen::MatrixXd& X,
     const Eigen::VectorXd& y,
-    const Eigen::VectorXd& lambda
+    const Eigen::VectorXd& lambda,
+    const std::string family
 ) {
     const int n = X.rows();
     const int p = X.cols();
@@ -47,13 +48,15 @@ Eigen::VectorXd slope_libslope_fit(
     std::set<double> unique_values(y.data(), y.data() + y.size());
     int n_unique = static_cast<int>(unique_values.size());
 
-    if (n_unique == 2) {
+    if (family == "binomial") {
       model.setLoss("logistic");
     } else {
       model.setLoss("quadratic");
     }
+    
     model.setScaling("none");
     model.setCentering("none");
+    model.setIntercept(false);
 
     Eigen::MatrixXd ymat(n, 1);
     ymat.col(0) = y;
@@ -67,7 +70,7 @@ Eigen::VectorXd slope_libslope_fit(
         lam
     );
 
-    auto B = fit.getCoefs();
+    auto B = fit.getCoefs(false);
 
     Eigen::VectorXd beta =
         Eigen::VectorXd::Zero(p);
