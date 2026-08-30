@@ -5,12 +5,12 @@
 \title{SLOBE}
 \usage{
 slobe(
-  Xmis,
-  Y,
+  X,
+  y,
+  family = "gaussian",
   start = NULL,
-  Xinit = NULL,
-  a_prior = 0.01 * NROW(Xmis),
-  b_prior = 0.01 * NROW(Xmis),
+  a_prior = 0.01 * NROW(X),
+  b_prior = 0.01 * NROW(X),
   Covmat = NULL,
   sigma = NULL,
   FDR = 0.05,
@@ -21,61 +21,42 @@ slobe(
 )
 }
 \arguments{
-\item{Xmis}{model matrix}
+\item{X}{design matrix}
 
-\item{Y}{numeric. Response variable.}
+\item{y}{numeric, response variable}
 
-\item{start}{the initial vector of regression coefficients for the first
-iteration. Default to the LASSO estimator obtained after}
+\item{family}{model family - either "gaussian" (default) or "binomial"}
 
-\item{Xinit}{model matrix with initially imputed NA values}
+\item{start}{model coefficients used for initialization}
 
 \item{a_prior, b_prior}{non-negative parameters of the prior Beta distribution
-on theta.}
+on theta}
 
-\item{Covmat}{numeric covariance matrix. Default to identity matrix.}
+\item{Covmat}{numeric covariance matrix, default to identity matrix}
 
-\item{sigma}{the variance of the noise. Default to 1.}
+\item{sigma}{the variance of the noise, default to 1}
 
-\item{FDR}{False Discovery Rate. Default to 0.05.}
+\item{FDR}{False Discovery Rate, default to 0.05}
 
-\item{tol}{optimization tolerance.}
+\item{tol}{optimization tolerance}
 
 \item{max_iter}{the maximal number of iterations of the optimization
-algorithm. Default to 100.}
+algorithm, default to 100}
 
-\item{verbose}{verbosity. Default to FALSE}
+\item{verbose}{verbosity, default to FALSE}
 
-\item{BH}{logical. Indicates whether the Benjamini-Hochberg correction for
-multiple testing should be used.}
+\item{BH}{logical, indicates whether the Benjamini-Hochberg correction for
+multiple testing should be used}
 }
 \description{
-Fit a gaussian model regularized with Adaptive Bayesian SLOPE
-and handle missing values by Stochastic Approximation of Expected
-Maximization (SAEM)
-}
-\details{
-\code{ABSLOPE} is the combination of SLOPE and Spike-and-Slab
-LASSO (SSL). This approach relies on iterations of the weighted SLOPE
-algorithm and finds the solution by minimizing
-\deqn{
-   G(Y,X,\beta) + \sum_{j = 1}^{p} w_j \lambda_{r(\beta,j)}|\beta_j|,
-  }{
-   G(Y,X,\beta) + \sum w_j |\beta_j|\lambda_r(\beta,j),
-  }
-where \eqn{r(\beta,j) = {1,2,...,p}} is the rank of \eqn{\beta_j}  among
-elements in \eqn{\beta} in a descending order. The weight \eqn{w_j} depends
-on the posterior probability that a variable \eqn{X_j} is a true predictor
-and is calculated based on the prior knowledge and on the  estimator of
-\eqn{\beta_j}, the signal sparsity and its average strength from the
-previous iterations.
+Fits a Gaussian or logistic model regularized with
+Adaptive Bayesian SLOPE
 }
 \examples{
 set.seed(17)
-xy <- SLOPE:::randomProblem(1e2, 200, response = "gaussian")
-X <- as.matrix(xy$x)
-Y <- xy$y
-fit <- ABSLOPE(X, Y)
+xy <- slobe:::generate_data(signals_num = 20, signals_strength = 5)
+fit <- slobe(xy$X, xy$y)
+fit$coefficients
 }
 \references{
 Jiang, W., Bogdan, M., Josse, J., Majewski, S., Miasojedow, B.,

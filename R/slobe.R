@@ -49,43 +49,24 @@ center_and_scale <- function(X) {
 
 #' SLOBE
 #'
-#' @description Fit a gaussian model regularized with Adaptive Bayesian SLOPE
-#'   and handle missing values by Stochastic Approximation of Expected
-#'   Maximization (SAEM)
+#' @description Fits a Gaussian or logistic model regularized with
+#' Adaptive Bayesian SLOPE
 #'
-#' @param start the initial vector of regression coefficients for the first
-#' iteration. Default to the LASSO estimator obtained after
-#'
-#' @param Xmis design matrix
-#' @param Y numeric. Response variable.
+#' @param X design matrix
+#' @param y numeric, response variable
 #' @param family model family - either "gaussian" (default) or "binomial"
-#' @param start model coefficients used for initialization.
+#' @param start model coefficients used for initialization
 #' @param a_prior,b_prior non-negative parameters of the prior Beta distribution
-#'   on theta.
-#' @param Covmat numeric covariance matrix. Default to identity matrix.
-#' @param sigma the variance of the noise. Default to 1.
-#' @param FDR False Discovery Rate. Default to 0.05.
-#' @param tol optimization tolerance.
+#'   on theta
+#' @param Covmat numeric covariance matrix, default to identity matrix
+#' @param sigma the variance of the noise, default to 1
+#' @param FDR False Discovery Rate, default to 0.05
+#' @param tol optimization tolerance
 #' @param max_iter the maximal number of iterations of the optimization
-#'   algorithm. Default to 100.
-#' @param verbose verbosity. Default to FALSE
-#' @param BH logical. Indicates whether the Benjamini-Hochberg correction for
-#'   multiple testing should be used.
-#'
-#' @details \code{ABSLOPE} is the combination of SLOPE and Spike-and-Slab
-#'   LASSO (SSL). This approach relies on iterations of the weighted SLOPE
-#'   algorithm and finds the solution by minimizing
-#'   \deqn{
-#'    G(Y,X,\beta) + \sum_{j = 1}^{p} w_j \lambda_{r(\beta,j)}|\beta_j|,
-#'   }{
-#'    G(Y,X,\beta) + \sum w_j |\beta_j|\lambda_r(\beta,j),
-#'   }
-#'   where \eqn{r(\beta,j) = {1,2,...,p}} is the rank of \eqn{\beta_j}  among
-#'   elements in \eqn{\beta} in a descending order. The weight \eqn{w_j} depends
-#'   on the posterior probability that a variable \eqn{X_j} is a true predictor
-#'   and is calculated based on the prior knowledge and on the  estimator of
-#'   \eqn{\beta_j}, the signal sparsity and its average strength from the
-#'   previous iterations.
+#'   algorithm, default to 100
+#' @param verbose verbosity, default to FALSE
+#' @param BH logical, indicates whether the Benjamini-Hochberg correction for
+#'   multiple testing should be used
 #'
 #' @references
 #'   Jiang, W., Bogdan, M., Josse, J., Majewski, S., Miasojedow, B.,
@@ -103,10 +84,9 @@ center_and_scale <- function(X) {
 #'
 #' @examples
 #' set.seed(17)
-#' xy <- SLOPE:::randomProblem(1e2, 200, response = "gaussian")
-#' X <- as.matrix(xy$x)
-#' y <- xy$y
-#' fit <- ABSLOPE(X, y)
+#' xy <- slobe:::generate_data(signals_num = 20, signals_strength = 5)
+#' fit <- slobe(xy$X, xy$y)
+#' fit$coefficients
 #' @export slobe
 #'
 
